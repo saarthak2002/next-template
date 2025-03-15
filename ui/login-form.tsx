@@ -1,4 +1,5 @@
-import { cn } from "@/lib/utils"
+'use client'
+
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -7,8 +8,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginForm() {
+    const searchParams = useSearchParams();
+    const params = new URLSearchParams(searchParams);
+    let showBanner = false;
+    if(params.get('signup') === 'true') {
+        showBanner = true;
+    }
     return (
         <div className="flex flex-col gap-6">
           <Card className="overflow-hidden py-0">
@@ -16,6 +24,9 @@ export default function LoginForm() {
               <form className="p-6 md:p-8">
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col items-center text-center">
+                  {showBanner && <div className="flex h-8 items-end space-x-1 mb-1" aria-live="polite" aria-atomic="true">
+                    <p className="text-sm text-green-500">Your account was created. Please login below.</p>
+                  </div>}
                     <h1 className="text-2xl font-bold">Welcome back</h1>
                     <p className="text-balance text-muted-foreground">
                       Login to your App account
