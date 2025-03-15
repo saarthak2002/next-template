@@ -4,10 +4,28 @@ import postgres from "postgres";
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import type { User } from '@/app/lib/definitions';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+
+export async function authenticate(prevState: string | undefined, formData: FormData) {
+    try {
+        await signIn('credentials', formData);
+        console.log("User Authenticated!");
+    } catch (error) {
+        if (error instanceof AuthError) {
+            switch (error.type) {
+                case 'CredentialsSignin':
+                    return 'Invalid credentials.'
+                default:
+                    return 'Something went wrong. Please try again later.'
+            }
+        }
+        throw error;
+    }
+}
 
 export async function createUser(prevState: string | undefined, formData: FormData) {
     const rawFormData = {
@@ -21,8 +39,8 @@ export async function createUser(prevState: string | undefined, formData: FormDa
     if (parsedCredentials.success) {
         const { name, email, password } = parsedCredentials.data;
         try {
+            // check if existing user with same email
             const user = await sql<User[]>`SELECT * FROM users WHERE email=${email}`;
-            console.log(user);
             if (user.length !== 0) {
                 console.log("A user with this email already exists.");
                 return "A user with this email already exists.";
@@ -33,7 +51,6 @@ export async function createUser(prevState: string | undefined, formData: FormDa
                     VALUES (${name}, ${email}, ${hashedPassword})
                 `
                 console.log("User Added!");
-                console.log({name, email, hashedPassword})
             }
         } catch (error) {
             console.log("Failed to fetch user:", error);
@@ -44,5 +61,4 @@ export async function createUser(prevState: string | undefined, formData: FormDa
         console.log("There was a validation error");
         return "There was a validation error.";
     }
-    
 }
